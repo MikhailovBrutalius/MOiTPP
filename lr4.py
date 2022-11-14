@@ -1,39 +1,40 @@
 from selenium import webdriver
+from selenium.webdriver.common.by import By
+import webbrowser
+import time
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.action_chains import ActionChains
 
 driver = webdriver.Firefox()
-BLOG_URL = "https://sprungmarker.de/"
-TAG_CLOUD = []
-posts = []
+driver.get("https://sprungmarker.de/")
 
-def read_tag_cloud():
-    tag_cloud_links = driver.find_elements_by_class_name("tag-cloud-link")
-    for link in tag_cloud_links:
-        TAG_CLOUD.append(link.text.lower())
+post_num = 0
+post_list = []
 
-def find_all_posts():
-    links = driver.find_elements_by_xpath("//h3[@class=\"entry-title\"]/a")
-    for link in links:
-        posts.append(link.get_attribute("href"))
+cookies = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, "#BorlabsCookieBox > div > div > div > div.cookie-box > div > div > div > p:nth-child(4) > a"))).click()
+content = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, "main")))
 
-def check_tags_in_cloud(post):
-    print("Проверка тэгов для "+post)
-    driver.get(post)
-    post_tags = []
-    for tag in driver.find_elements_by_xpath("//span[@class=\"cat-links\"]/a"):
-        post_tags.append(tag.text.lower())
-    print("Тэги поста: "+ str(post_tags))
-    for tag in post_tags:
-        if tag in TAG_CLOUD:
-            print("Тэг "+tag+" есть в облаке тэгов")
-        else:
-            print("Тэга "+tag+" нет в облаке тэгов")
-    
+posts = content.find_elements(By.TAG_NAME, "article")
 
-if __name__ == "__main__":
-    driver.get(BLOG_URL)
-    read_tag_cloud()
-    print("Облако тэгов на сайте "+BLOG_URL+": "+str(TAG_CLOUD))
-    find_all_posts()
-    for post in posts:
-        check_tags_in_cloud(post)
-    #driver.close()
+for post in posts: 
+    post_num += 1
+    link = post.find_element(By.TAG_NAME, "a").get_attribute("href")
+    print(link)
+    post_list.append(link)
+
+for link in post_list:
+    driver.execute_script("window.open('');")              
+    driver.switch_to.window(driver.window_handles[-1])     
+    driver.get(link)  
+    time.sleep(2)
+    driver.close() 
+    driver.switch_to.window(driver.window_handles[-1])
+
+navigation = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, "#main > nav > div > a:nth-child(2)"))).click()
+navigation = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, "#main > nav > div > a.next.page-numbers"))).click()
+
+print("Количество постов на главной странице - "+ str(post_num))  
+time.sleep(2)
+driver.quit()
